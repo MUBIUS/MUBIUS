@@ -1,6 +1,6 @@
 - 👋 Hi, I’m @MUBIUS aka Mubasheer Shaikh
 - 👀 I’m interested in Game Dev and AI development
-- 🌱 I’m currently Studying Bachelor of Engineering In from From Lokmanya Tilak College Of Engineering
+- 🌱 I’m currently Studying Bachelor of Engineering In **Computer Science and Engineering(Artificial Intelligence and Machine Learning)** from From Lokmanya Tilak College Of Engineering
 - 📫 How to reach me mubasheershkh@gmail.com
 
 <!---
