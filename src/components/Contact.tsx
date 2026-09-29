@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Mail, Phone, MapPin, Github, Copy, Check, Send, ArrowUpRight } from 'lucide-react';
+import { Mail, Phone, MapPin, Github, Copy, Check, Send, ArrowUpRight, Loader2, AlertCircle } from 'lucide-react';
 import { PORTFOLIO_DATA } from '../data/portfolioData';
 
 export const Contact: React.FC = () => {
@@ -9,7 +9,9 @@ export const Contact: React.FC = () => {
     email: '',
     message: '',
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formSent, setFormSent] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
   const copyToClipboard = (text: string, key: string) => {
     navigator.clipboard.writeText(text);
@@ -17,13 +19,42 @@ export const Contact: React.FC = () => {
     setTimeout(() => setCopied(null), 2000);
   };
 
-  const handleSendMessage = (e: React.FormEvent) => {
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    const mailtoUrl = `mailto:${PORTFOLIO_DATA.personal.email}?subject=${encodeURIComponent(
-      `Portfolio Inquiry from ${formState.name}`
-    )}&body=${encodeURIComponent(`From: ${formState.name} (${formState.email})\n\n${formState.message}`)}`;
-    window.location.href = mailtoUrl;
-    setFormSent(true);
+    setIsSubmitting(true);
+    setFormError(null);
+
+    try {
+      const response = await fetch(`https://formsubmit.co/ajax/${PORTFOLIO_DATA.personal.email}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify({
+          name: formState.name,
+          email: formState.email,
+          message: formState.message,
+          _subject: `New Portfolio Message from ${formState.name}`,
+        }),
+      });
+
+      if (response.ok) {
+        setFormSent(true);
+        setFormState({ name: '', email: '', message: '' });
+      } else {
+        throw new Error('Server returned an error');
+      }
+    } catch {
+      // Fallback: If network block occurs, launch mailto
+      const mailtoUrl = `mailto:${PORTFOLIO_DATA.personal.email}?subject=${encodeURIComponent(
+        `Portfolio Inquiry from ${formState.name}`
+      )}&body=${encodeURIComponent(`From: ${formState.name} (${formState.email})\n\n${formState.message}`)}`;
+      window.location.href = mailtoUrl;
+      setFormSent(true);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -173,22 +204,24 @@ export const Contact: React.FC = () => {
 
             {formSent ? (
               <div className="py-8 text-center space-y-3">
-                <div className="w-10 h-10 rounded-full bg-emerald-500/20 text-emerald-400 mx-auto flex items-center justify-center">
-                  <Check className="w-5 h-5" />
+                <div className="w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-400 mx-auto flex items-center justify-center">
+                  <Check className="w-6 h-6" />
                 </div>
-                <h4 className="text-lg font-display font-bold text-white">
-                  Message Dispatched to Mail Client
+                <h4 className="text-xl font-display font-bold text-white">
+                  Message Transmitted Successfully!
                 </h4>
-                <p className="text-xs text-slate-400 max-w-sm mx-auto">
-                  Your mail app opened with the formatted message to Mubasheer Shaikh. Alternatively, send directly to <strong className="text-white">mubasheershkh@gmail.com</strong>.
+                <p className="text-xs sm:text-sm text-slate-300 max-w-sm mx-auto leading-relaxed">
+                  Your message has been sent directly to <strong className="text-emerald-400">mubasheershkh@gmail.com</strong>. Mubasheer will review and respond to your email as soon as possible.
                 </p>
-                <button
-                  type="button"
-                  onClick={() => setFormSent(false)}
-                  className="mt-4 px-4 py-2 text-xs font-mono rounded-lg bg-white/[0.05] text-slate-300 hover:text-white"
-                >
-                  Send Another Message
-                </button>
+                <div className="pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setFormSent(false)}
+                    className="px-4 py-2 text-xs font-mono rounded-lg bg-white/[0.05] border border-white/[0.1] text-slate-300 hover:text-white transition-colors"
+                  >
+                    Send Another Dispatch
+                  </button>
+                </div>
               </div>
             ) : (
               <form onSubmit={handleSendMessage} className="space-y-4">
@@ -200,10 +233,11 @@ export const Contact: React.FC = () => {
                     id="contact-name"
                     type="text"
                     required
+                    disabled={isSubmitting}
                     value={formState.name}
                     onChange={(e) => setFormState({ ...formState, name: e.target.value })}
                     placeholder="e.g. Alex Morgan / Indie Game Studio"
-                    className="w-full px-3.5 py-2.5 rounded-lg bg-[#07090E] border border-white/[0.08] text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 transition-colors"
+                    className="w-full px-3.5 py-2.5 rounded-lg bg-[#07090E] border border-white/[0.08] text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 transition-colors disabled:opacity-50"
                   />
                 </div>
 
@@ -215,10 +249,11 @@ export const Contact: React.FC = () => {
                     id="contact-email"
                     type="email"
                     required
+                    disabled={isSubmitting}
                     value={formState.email}
                     onChange={(e) => setFormState({ ...formState, email: e.target.value })}
                     placeholder="alex@gamestudio.com"
-                    className="w-full px-3.5 py-2.5 rounded-lg bg-[#07090E] border border-white/[0.08] text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 transition-colors"
+                    className="w-full px-3.5 py-2.5 rounded-lg bg-[#07090E] border border-white/[0.08] text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 transition-colors disabled:opacity-50"
                   />
                 </div>
 
@@ -229,20 +264,31 @@ export const Contact: React.FC = () => {
                   <textarea
                     id="contact-message"
                     required
+                    disabled={isSubmitting}
                     rows={4}
                     value={formState.message}
                     onChange={(e) => setFormState({ ...formState, message: e.target.value })}
                     placeholder="Tell me about the game, AI system, or role you want to collaborate on..."
-                    className="w-full px-3.5 py-2.5 rounded-lg bg-[#07090E] border border-white/[0.08] text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 transition-colors resize-none"
+                    className="w-full px-3.5 py-2.5 rounded-lg bg-[#07090E] border border-white/[0.08] text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 transition-colors resize-none disabled:opacity-50"
                   />
                 </div>
 
                 <button
                   type="submit"
-                  className="w-full py-3 px-4 rounded-lg bg-white text-black font-semibold text-xs uppercase tracking-wider hover:bg-slate-200 transition-all flex items-center justify-center gap-2 active:scale-[0.99] shadow-md shadow-white/5"
+                  disabled={isSubmitting}
+                  className="w-full py-3 px-4 rounded-lg bg-white text-black font-semibold text-xs uppercase tracking-wider hover:bg-slate-200 transition-all flex items-center justify-center gap-2 active:scale-[0.99] shadow-md shadow-white/5 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  <Send className="w-3.5 h-3.5" />
-                  <span>Send Message Directly</span>
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Transmitting Message...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-3.5 h-3.5" />
+                      <span>Send Message Directly</span>
+                    </>
+                  )}
                 </button>
               </form>
             )}
